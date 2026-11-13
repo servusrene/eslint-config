@@ -42,7 +42,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "npm run build && eslint .",
     "lint:fix": "npm run build && eslint . --fix",
-    "test": "npm run build && node test/run.js"
+    "test": "npm run build && node --test 'test/*.test.js'"
   },
   "dependencies": {
     "@eslint/js": "^9.39.5",

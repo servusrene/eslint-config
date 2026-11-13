@@ -69,9 +69,14 @@ Individual configs are also available as subpaths: `@servusrene/eslint-config/re
 
 ```sh
 npm run build      # src/*.ts -> dist/
-npm test           # build + fixture tests
+npm test           # build + rule tests
 npm run lint       # lints this repo with its own config
 ```
+
+Every configured rule needs fixtures in `test/fixtures/rules/<javascript|typescript|react>/<rule-id>/`:
+`invalid*.js` must report the rule, `valid*.js` must not (`.ts` for typescript, `.jsx` for react).
+The test fails if a rule in a `servusrene/*` config block has no fixture folder.
+File-specific behaviour (globals, CommonJS, resolver, …) is covered by `test/fixtures/scoping/`.
 
 ## License
 
