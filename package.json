@@ -1,6 +1,6 @@
 {
   "name": "@servusrene/eslint-config",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shareable ESLint flat config (JavaScript, TypeScript, React)",
   "type": "module",
   "repository": {
