@@ -103,6 +103,154 @@ describe('rule coverage', () => {
     });
 });
 
+describe('servusrene/jsx-no-leaked-render at any depth', () => {
+    const depth = 100;
+    const vars = Array.from({length: depth}, (_, i) => `v${i}`);
+    const component = (expression) => `export const Foo = ({${vars.join(', ')}}) => <div>{${expression}}</div>;\n`;
+    const reports = async (code) => {
+        const [result] = await eslint.lintText(code, {filePath: join(fixtures, 'depth.jsx')});
+        assert.deepEqual(result.messages.filter((message) => message.fatal), []);
+        return result.messages.filter((message) => message.ruleId === 'servusrene/jsx-no-leaked-render');
+    };
+    // v0 ? <i /> : v1 ? <i /> : ... : <tail>
+    const ternaryChain = (tail) => vars.reduceRight((rest, name) => `${name} ? <i /> : ${rest}`, tail);
+    // v0 ? (v1 ? (... <tail> ...) : null) : null
+    const nestedConsequent = (tail) => vars.reduceRight((rest, name) => `${name} ? (${rest}) : null`, tail);
+    const andChain = `${vars.join(' && ')} && <b />`;
+
+    test(`&& chain of ${depth} operands is reported once`, async () => {
+        assert.equal((await reports(component(andChain))).length, 1);
+    });
+
+    test(`&& chain after ${depth} ternary alternates is reported once`, async () => {
+        assert.equal((await reports(component(ternaryChain(`(${andChain})`)))).length, 1);
+    });
+
+    test(`&& chain inside ${depth} nested ternary consequents is reported once`, async () => {
+        assert.equal((await reports(component(nestedConsequent(andChain)))).length, 1);
+    });
+
+    test(`|| after ${depth} ternary alternates is reported`, async () => {
+        assert.equal((await reports(component(ternaryChain('v0 || \'x\'')))).length, 1);
+    });
+
+    test(`${depth} nested ternaries with && only in conditions are valid`, async () => {
+        const conditions = vars.reduceRight((rest, name, i) => `${name} && v${(i + 1) % depth} ? <i /> : ${rest}`, 'null');
+        assert.deepEqual(await reports(component(conditions)), []);
+        assert.deepEqual(await reports(component(nestedConsequent('<b />'))), []);
+    });
+});
+
+describe('servusrene/jsx-wrap-return autofix', () => {
+    const fixer = new ESLint({
+        cwd: fixtures,
+        fix: true,
+        overrideConfigFile: true,
+        overrideConfig: [...configs.recommended, ...configs.react, {settings: {react: {version: '19.0'}}}]
+    });
+    const fix = async (code) => {
+        const [result] = await fixer.lintText(code, {filePath: join(fixtures, 'fix.jsx')});
+        return result.output ?? code;
+    };
+
+    test('wraps a returned single-line element', async () => {
+        assert.equal(
+            await fix('export const Foo = (props) => {\n    return <div {...props} />;\n};\n'),
+            'export const Foo = (props) => {\n    return (\n        <div {...props} />\n    );\n};\n'
+        );
+    });
+
+    test('wraps an arrow body, including nested callbacks', async () => {
+        assert.equal(
+            await fix('export const List = ({items}) => <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>;\n'),
+            'export const List = ({items}) => (\n    <ul>{items.map((item) => (\n        <li key={item}>{item}</li>\n    ))}</ul>\n);\n'
+        );
+    });
+
+    test('wraps JSX in ternary branches of a returned value', async () => {
+        assert.equal(
+            await fix('export const Foo = ({a, b}) => {\n    return a ? <span /> : b ? <i /> : null;\n};\n'),
+            'export const Foo = ({a, b}) => {\n    return a ? (\n        <span />\n    ) : b ? (\n        <i />\n    ) : null;\n};\n'
+        );
+        assert.equal(
+            await fix('export const Foo = ({a}) => a ? <span /> : null;\n'),
+            'export const Foo = ({a}) => a ? (\n    <span />\n) : null;\n'
+        );
+    });
+
+    test('moves existing parentheses onto their own lines', async () => {
+        assert.equal(
+            await fix('export const Foo = () => (<div />);\n'),
+            'export const Foo = () => (\n    <div />\n);\n'
+        );
+    });
+});
+
+describe('servusrene/null-last autofix', () => {
+    const fixer = new ESLint({
+        cwd: fixtures,
+        fix: true,
+        overrideConfigFile: true,
+        overrideConfig: [...configs.recommended, ...configs.react, {settings: {react: {version: '19.0'}}}]
+    });
+    const fix = async (code) => {
+        const [result] = await fixer.lintText(code, {filePath: join(fixtures, 'fix.jsx')});
+        return result.output ?? code;
+    };
+    const wrapped = (test) => `export const Foo = ({a, b}) => {\n    return ${test} ? (\n        <span />\n    ) : null;\n};\n`;
+    const nullFirst = (test) => `export const Foo = ({a, b}) => {\n    return ${test} ? null : (\n        <span />\n    );\n};\n`;
+
+    test('removes a negation: !a ? null : <X /> -> a ? <X /> : null', async () => {
+        assert.equal(await fix(nullFirst('!a')), wrapped('a'));
+    });
+
+    test('adds a negation: a ? null : <X /> -> !a ? <X /> : null', async () => {
+        assert.equal(await fix(nullFirst('a')), wrapped('!a'));
+        assert.equal(await fix(nullFirst('a.b')), wrapped('!a.b'));
+    });
+
+    test('flips comparisons', async () => {
+        assert.equal(await fix(nullFirst('a === b')), wrapped('a !== b'));
+        assert.equal(await fix(nullFirst('a != null')), wrapped('a == null'));
+    });
+
+    test('wraps compound conditions', async () => {
+        assert.equal(await fix(nullFirst('a && b')), wrapped('!(a && b)'));
+        assert.equal(await fix(nullFirst('a > b')), wrapped('!(a > b)'));
+        assert.equal(await fix(nullFirst('!(a || b)')), wrapped('(a || b)'));
+    });
+
+    test('also wraps single-line JSX while moving it', async () => {
+        assert.equal(
+            await fix('export const Foo = ({a}) => a ? null : <span />;\n'),
+            'export const Foo = ({a}) => !a ? (\n    <span />\n) : null;\n'
+        );
+    });
+
+    test('applies to plain values outside of JSX and returns', async () => {
+        assert.equal(
+            await fix('export const find = (items, id) => {\n    return id ? null : items[0];\n};\n'),
+            'export const find = (items, id) => {\n    return !id ? items[0] : null;\n};\n'
+        );
+        assert.equal(
+            await fix('export const options = (a, b) => ({value: a === b ? null : a});\n'),
+            'export const options = (a, b) => ({value: a !== b ? a : null});\n'
+        );
+    });
+
+    test('applies to JSX children', async () => {
+        assert.equal(
+            await fix('export const Foo = ({a}) => (\n    <div>{a ? null : <span />}</div>\n);\n'),
+            'export const Foo = ({a}) => (\n    <div>{!a ? <span /> : null}</div>\n);\n'
+        );
+    });
+
+    test('is reported but not fixed when the other branch is a ternary', async () => {
+        const code = 'export const Foo = ({a, b}) => {\n    return a ? null : b ? (\n        <i />\n    ) : null;\n};\n';
+        assert.equal(await fix(code), code);
+    });
+});
+
 describe('file scoping (fixtures/scoping)', () => {
     test('browser globals are available in source files', async () => {
         assert.ok(!(await ruleIdsOf('scoping/src/browser-globals.js')).includes('no-undef'));

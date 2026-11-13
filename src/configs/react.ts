@@ -8,6 +8,7 @@ import type {Linter} from 'eslint';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
+import servusrene from '../plugin.js';
 
 const files = ['**/*.{js,jsx,mjs,ts,tsx}'];
 
@@ -27,6 +28,9 @@ const config: Linter.Config[] = [
     {
         name: 'servusrene/react',
         files,
+        plugins: {
+            servusrene
+        },
         languageOptions: {
             parserOptions: {
                 ecmaFeatures: {
@@ -58,26 +62,15 @@ const config: Linter.Config[] = [
             '@stylistic/jsx-wrap-multilines': ['warn', {
                 declaration: 'parens-new-line',
                 assignment: 'parens-new-line',
-                return: 'parens-new-line',
-                arrow: 'parens-new-line',
+                // return and arrow bodies are handled by servusrene/jsx-wrap-return
+                return: 'ignore',
+                arrow: 'ignore',
                 condition: 'parens-new-line',
                 logical: 'parens-new-line',
                 prop: 'parens-new-line'
             }],
-            'no-restricted-syntax': [
-                'error',
-                // Avoid rendering '0' instead of nothing: https://stackoverflow.com/q/53048037
-                {
-                    selector: ':matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator=\'&&\']',
-                    message: 'Please use `condition ? <Jsx /> : null`. Otherwise, there is a chance of rendering \'0\' instead'
-                        + ' of \'\' in some cases. Context: https://stackoverflow.com/q/53048037'
-                },
-                {
-                    selector: ':matches(JSXElement, JSXFragment) > JSXExpressionContainer > LogicalExpression[operator=\'||\']',
-                    message: 'Please use `value ?? fallbackValue`. Otherwise, there is a chance of rendering \'0\' instead of \'\''
-                        + ' in some cases. Context: https://stackoverflow.com/q/53048037'
-                }
-            ]
+            'servusrene/jsx-no-leaked-render': 'error',
+            'servusrene/jsx-wrap-return': 'warn'
         }
     }
 ];

@@ -9,6 +9,7 @@ import js from '@eslint/js';
 import stylistic from '@stylistic/eslint-plugin';
 import {flatConfigs as importConfigs} from 'eslint-plugin-import-x';
 import globals from 'globals';
+import servusrene from '../plugin.js';
 
 export const rules: Linter.RulesRecord = {
     'block-scoped-var': 'error',
@@ -28,7 +29,8 @@ export const rules: Linter.RulesRecord = {
     'prefer-const': 'warn',
     'require-await': 'error',
     'import-x/no-unresolved': 'off',
-    'import-x/named': 'off'
+    'import-x/named': 'off',
+    'servusrene/null-last': 'warn'
 };
 
 export const stylisticRules: Linter.RulesRecord = {
@@ -65,7 +67,8 @@ const config: Linter.Config[] = [
             }
         },
         plugins: {
-            '@stylistic': stylistic
+            '@stylistic': stylistic,
+            servusrene
         },
         rules: {
             ...rules,

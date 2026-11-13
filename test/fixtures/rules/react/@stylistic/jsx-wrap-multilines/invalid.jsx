@@ -1,3 +1,5 @@
-export const Foo = () => <div>
+const element = <div>
     <span />
 </div>;
+
+export {element};

@@ -6,9 +6,9 @@ Requires ESLint 9 (`eslint-plugin-react` does not support ESLint 10 yet). All pl
 
 | Config        | Contents                                                                    |
 |---------------|-----------------------------------------------------------------------------|
-| `recommended` | `@eslint/js` recommended, `import-x`, stylistic rules (4 spaces, single quotes, `{a}` without spaces) |
+| `recommended` | `@eslint/js` recommended, `import-x`, stylistic rules (4 spaces, single quotes, `{a}` without spaces), `servusrene/null-last` (`null` is always the last branch of a ternary) |
 | `typescript`  | `typescript-eslint` recommended for `*.ts`/`*.tsx`, TS import resolver      |
-| `react`       | `eslint-plugin-react`, `react-hooks`, JSX style rules                       |
+| `react`       | `eslint-plugin-react`, `react-hooks`, JSX style rules, `servusrene/jsx-no-leaked-render` (no `&&`/`||` as JSX child, also inside ternaries), `servusrene/jsx-wrap-return` (returned JSX always in `(` `)` on own lines) |
 
 `typescript` and `react` are add-ons: always combine them with `recommended`.
 
