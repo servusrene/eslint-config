@@ -74,6 +74,18 @@ const config: Linter.Config[] = [
             'servusrene/jsx-no-leaked-render': 'error',
             'servusrene/jsx-wrap-return': 'warn'
         }
+    },
+    {
+        name: 'servusrene/react-components',
+        files: ['**/*.{jsx,tsx}'],
+        ignores: ['**/*.{test,spec}.{jsx,tsx}'],
+        plugins: {
+            servusrene
+        },
+        rules: {
+            'react/no-multi-comp': ['error', {ignoreStateless: false}],
+            'servusrene/component-default-export': 'error'
+        }
     }
 ];
 

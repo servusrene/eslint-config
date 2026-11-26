@@ -302,6 +302,12 @@ describe('file scoping (fixtures/scoping)', () => {
         assert.deepEqual(messages.filter((message) => message.message.includes('Resolve error')), []);
     });
 
+    test('component structure rules skip test files', async () => {
+        const ruleIds = await ruleIdsOf('scoping/components.test.jsx');
+        assert.ok(!ruleIds.includes('react/no-multi-comp'));
+        assert.ok(!ruleIds.includes('servusrene/component-default-export'));
+    });
+
     test('react rules apply to .tsx files', async () => {
         assert.ok((await ruleIdsOf('scoping/Component.tsx')).includes('react/function-component-definition'));
     });
