@@ -57,6 +57,8 @@ const config: Linter.Config[] = [
             '@stylistic/jsx-curly-brace-presence': ['warn', 'never'],
             '@stylistic/jsx-curly-spacing': ['warn', 'never'],
             '@stylistic/jsx-equals-spacing': ['warn', 'never'],
+            // JSX attributes are aligned by jsx-indent-props, so indent must not fight over them
+            '@stylistic/indent': ['warn', 4, {SwitchCase: 1, ignoredNodes: ['JSXAttribute', 'JSXSpreadAttribute']}],
             '@stylistic/jsx-indent-props': ['warn', 'first'],
             '@stylistic/jsx-pascal-case': 'error',
             '@stylistic/jsx-wrap-multilines': ['warn', {

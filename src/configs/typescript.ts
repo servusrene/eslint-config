@@ -34,6 +34,8 @@ const config: Linter.Config[] = [
             '@typescript-eslint/no-unused-vars': rules['no-unused-vars'],
             'no-use-before-define': 'off',
             '@typescript-eslint/no-use-before-define': rules['no-use-before-define'],
+            // allow namespaces only in ambient declarations, e.g. `declare global { namespace NodeJS {...} }`
+            '@typescript-eslint/no-namespace': ['error', {allowDeclarations: true}],
             '@stylistic/member-delimiter-style': 'warn'
         }
     }
