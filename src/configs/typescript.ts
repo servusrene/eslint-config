@@ -19,7 +19,7 @@ const config: Linter.Config[] = [
         settings: {
             ...importConfigs.typescript.settings,
             'import-x/resolver': undefined,
-            'import-x/resolver-next': [createTypeScriptImportResolver()]
+            'import-x/resolver-next': [createTypeScriptImportResolver({project: '**/tsconfig.json', noWarnOnMultipleProjects: true})]
         }
     },
     {

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 import {readdirSync} from 'node:fs';
 import {join, relative} from 'node:path';
+import {execPath} from 'node:process';
 import {describe, test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {ESLint} from 'eslint';
@@ -300,6 +302,22 @@ describe('file scoping (fixtures/scoping)', () => {
     test('typescript imports resolve without resolver errors', async () => {
         const messages = await lint('scoping/resolve.ts');
         assert.deepEqual(messages.filter((message) => message.message.includes('Resolve error')), []);
+    });
+
+    test('path aliases of a nested tsconfig resolve', () => {
+        const project = join(fixtures, 'scoping');
+        const script = `
+            import {ESLint} from 'eslint';
+            import {configs} from ${JSON.stringify(new URL('../dist/index.js', import.meta.url).href)};
+            const eslint = new ESLint({
+                overrideConfigFile: true,
+                overrideConfig: [...configs.recommended, ...configs.typescript, {rules: {'import-x/no-unresolved': 'error'}}]
+            });
+            const [result] = await eslint.lintFiles(['nested/src/alias.ts']);
+            console.log(JSON.stringify(result.messages.map((message) => message.ruleId)));
+        `;
+        const output = execFileSync(execPath, ['--input-type=module', '-e', script], {cwd: project, encoding: 'utf8'});
+        assert.ok(!JSON.parse(output).includes('import-x/no-unresolved'));
     });
 
     test('component structure rules skip test files', async () => {
